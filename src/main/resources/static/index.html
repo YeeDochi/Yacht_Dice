@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Yacht Dice</title>
+    <link rel="stylesheet" href="/style.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* [수정] 좌우 배치를 위한 Flex 스타일 */
+        .game-layout {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        /* [수정] 방 목록 아이템 */
+        .room-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        .room-item:hover { background-color: var(--row-hover); }
+        .room-item:last-child { border-bottom: none; }
+
+        /* [게임 스테이지] 전체 박스 스타일 */
+        .game-stage {
+            border: 1px solid var(--border-color);
+            background: var(--box-bg);
+            width: 600px; height: 500px;
+            position: relative;
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        /* 1. 주사위 영역 */
+        #dice-section {
+            flex: 0 0 130px;
+            background: var(--bg-header);
+            border-bottom: 1px solid var(--border-color);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 10px; padding: 10px;
+        }
+        .dice-wrap { display: flex; gap: 10px; }
+
+        /* 주사위 디자인 */
+        .dice {
+            width: 50px; height: 50px;
+            background: var(--box-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 8px;
+            font-size: 28px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.1s;
+        }
+        .dice:active { transform: scale(0.95); }
+        .dice.kept {
+            background: #ffec99;
+            border-color: #ffd43b;
+            color: #333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* 2. 점수판 영역 */
+        #score-section { flex: 1; overflow-y: auto; padding: 0; }
+
+        .score-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .score-table th {
+            background: var(--bg-header);
+            color: var(--text-secondary);
+            padding: 10px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            position: sticky; top: 0;
+        }
+        .score-table td {
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+            height: 32px;
+        }
+        .category-name { font-weight: 600; color: var(--text-primary); }
+
+        .score-cell { cursor: pointer; text-align: center; }
+        .score-cell:hover { background: var(--row-hover); }
+        .score-cell.filled {
+            background: var(--bg-header);
+            color: var(--text-secondary);
+            cursor: default;
+        }
+
+        /* [우측 패널] */
+        #right-panel {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--box-bg);
+            display: flex; flex-direction: column; height: 500px; flex: 1;
+            min-width: 300px;
+        }
+
+        /* 유저 목록 스타일 */
+        #user-list-area {
+            flex: 0 0 150px;
+            border-bottom: 1px solid var(--border-color);
+            overflow-y: auto;
+            background: var(--box-bg);
+        }
+        .user-row {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+        .user-row:hover { background: var(--row-hover); }
+        .user-row.active {
+            background: var(--row-hover);
+            border-left: 3px solid var(--status-online);
+        }
+        .user-row.turn { font-weight: bold; color: var(--status-online); }
+
+        /* 채팅 영역 */
+        #chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        #messages { flex: 1; overflow-y: auto; padding: 10px; font-size: 13px; color: var(--text-primary); }
+
+        /* [수정] 채팅 입력창 스타일 보강 */
+        .msg-input-box {
+            padding: 10px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 5px;
+            background: var(--bg-header);
+        }
+        /* 입력창이 남은 공간을 차지하도록 설정 (width: 100% 무시) */
+        .msg-input-box input {
+            flex: 1;
+            width: auto;
+        }
+        /* 버튼 글씨가 세로로 찌그러지지 않도록 설정 */
+        .msg-input-box button {
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* 패널 헤더 */
+        .panel-header {
+            padding: 8px 16px;
+            background: var(--bg-header);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="repo-breadcrumb">
+        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" width="30" style="border-radius:50%; opacity:1;">
+        <a href="/" class="user-name">game-hub</a>
+        <span style="color:var(--text-primary)">/</span>
+        <a href="#" class="repo-name">Yacht_Dice</a>
+        <span class="badge">Public</span>
+    </div>
+    <button class="theme-btn" onclick="Core.toggleTheme()">Dark/Light</button>
+</header>
+
+<div id="alert-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:2000;">
+    <div class="box" style="width:320px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin: 0;">
+        <div class="box-header">알림</div>
+        <div style="padding: 20px; text-align: center; color: var(--text-primary);">
+            <p id="alert-msg-text" style="margin: 0; word-break: keep-all;">메시지 내용</p>
+        </div>
+        <div style="padding:16px; border-top: 1px solid var(--border-color);">
+            <button class="btn-primary" onclick="Core.closeAlert()" style="width: 100%;">확인</button>
+        </div>
+    </div>
+</div>
+
+<div id="confirm-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:2000;">
+    <div class="box" style="width:320px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin: 0;">
+        <div class="box-header">확인</div>
+        <div style="padding: 20px; text-align: center; color: var(--text-primary);">
+            <p id="confirm-msg-text" style="margin: 0; word-break: keep-all;">진행하시겠습니까?</p>
+        </div>
+        <div style="padding:16px; border-top: 1px solid var(--border-color); display:flex; gap:10px;">
+            <button class="btn-default" onclick="Core.closeConfirm()" style="flex:1;">취소</button>
+            <button class="btn-primary" onclick="Core.confirmOk()" style="flex:1;">확인</button>
+        </div>
+    </div>
+</div>
+
+<div id="login-screen" class="container" style="max-width: 400px; margin-top: 50px;">
+    <div class="box">
+        <div class="box-header">게임 입장</div>
+        <div style="padding: 20px;">
+            <label>닉네임</label>
+            <input type="text" id="nicknameInput" placeholder="닉네임 입력" onkeypress="if(event.key==='Enter') Core.login()">
+            <button class="btn-primary" onclick="Core.login()" style="width:100%; margin-top:20px;">입장하기</button>
+        </div>
+    </div>
+</div>
+
+<div id="lobby-screen" class="container hidden">
+    <div class="box">
+        <div class="box-header">대기실 <span id="welcome-msg" style="font-size:12px; font-weight:normal;"></span></div>
+        <div style="padding: 16px; display:flex; gap:10px;">
+            <input type="text" id="roomNameInput" placeholder="방 제목" value="새로운 게임방" style="flex:2;">
+            <button class="btn-primary" onclick="Core.createRoom()">방 만들기</button>
+        </div>
+        <div style="max-height: 400px; overflow-y: auto;">
+            <div class="panel-header">방 목록</div>
+            <ul id="room-list" style="list-style: none; padding: 0; margin: 0;"></ul>
+        </div>
+    </div>
+</div>
+
+<div id="game-screen" class="container hidden">
+    <div class="game-meta" style="display:flex; justify-content:space-between; margin-bottom:10px; align-items:center;">
+        <div>
+            <strong id="room-title-text" style="font-size: 18px;">방 제목</strong>
+            <span id="game-status" class="badge">대기 중</span>
+        </div>
+        <div>
+            <button id="startBtn" class="btn-primary" onclick="Core.startGame()">게임 시작</button>
+            <button class="btn-danger" onclick="Core.exitRoom()">나가기</button>
+        </div>
+    </div>
+
+    <div class="game-layout">
+        <div id="game-stage" class="game-stage">
+            <div id="dice-section">
+                <div class="turn-indicator" id="turn-msg" style="font-size:14px; font-weight:bold; color:var(--text-secondary); margin-bottom:5px;">게임 대기 중</div>
+                <div class="dice-wrap" id="dice-container">
+                    <div class="dice">?</div><div class="dice">?</div><div class="dice">?</div><div class="dice">?</div><div class="dice">?</div>
+                </div>
+                <button class="btn-primary" id="btn-roll" onclick="Core.sendAction({actionType:'ROLL'})" style="margin-top:10px; padding: 5px 20px;" disabled>
+                    굴리기 (<span id="roll-cnt">3</span>)
+                </button>
+            </div>
+
+            <div id="score-section">
+                <table class="score-table">
+                    <thead>
+                    <tr>
+                        <th width="40%">족보</th>
+                        <th id="score-header-name">점수</th>
+                    </tr>
+                    </thead>
+                    <tbody id="score-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="right-panel">
+            <div class="panel-header">플레이어 목록</div>
+            <div id="user-list-area"></div>
+
+            <div class="panel-header" style="border-top:1px solid var(--border-color);">채팅</div>
+            <div id="chat-area">
+                <div id="messages"></div>
+                <div class="msg-input-box">
+                    <input type="text" id="chatInput" placeholder="입력..." onkeypress="if(event.key==='Enter') Core.sendChat()">
+                    <button class="btn-primary" onclick="Core.sendChat()">전송</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="ranking-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:999;">
+    <div class="box" style="width:300px; text-align: center; padding-bottom:20px; margin: 0;">
+        <div class="box-header">🏆 게임 종료</div>
+        <div style="padding: 20px;">
+            <h2 id="winnerName" style="color:#2da44e; margin:0;">WINNER</h2>
+            <p style="color:#666;">승리를 축하합니다!</p>
+        </div>
+        <button class="btn-primary" onclick="Core.closeRanking()">나가기</button>
+    </div>
+</div>
+
+<script src="/Yacht_Dice/js/game-core.js"></script>
+<script src="/Yacht_Dice/js/yacht.js"></script>
+</body>
+</html>
