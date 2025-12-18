@@ -12,160 +12,125 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
 
     <style>
-        /* [수정] 좌우 배치를 위한 Flex 스타일 */
-        .game-layout {
-            display: flex;
-            gap: 20px;
-            align-items: flex-start;
-        }
+        .game-layout { display: flex; gap: 20px; align-items: flex-start; }
 
-        /* [수정] 방 목록 아이템 */
         .room-item {
             padding: 12px 16px;
             border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            font-size: 14px;
-            color: var(--text-primary);
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; font-size: 14px; color: var(--text-primary);
         }
         .room-item:hover { background-color: var(--row-hover); }
         .room-item:last-child { border-bottom: none; }
 
-        /* [게임 스테이지] 전체 박스 스타일 */
         .game-stage {
-            border: 1px solid var(--border-color);
-            background: var(--box-bg);
-            width: 600px; height: 500px;
-            position: relative;
-            border-radius: 6px;
-            overflow: hidden;
+            border: 1px solid var(--border-color); background: var(--box-bg);
+            width: 600px; height: 600px; /* 높이 조금 늘림 */
+            position: relative; border-radius: 6px; overflow: hidden;
             display: flex; flex-direction: column;
         }
 
-        /* 1. 주사위 영역 */
         #dice-section {
-            flex: 0 0 130px;
-            background: var(--bg-header);
+            flex: 0 0 130px; background: var(--bg-header);
             border-bottom: 1px solid var(--border-color);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             gap: 10px; padding: 10px;
         }
         .dice-wrap { display: flex; gap: 10px; }
 
-        /* 주사위 디자인 */
         .dice {
-            width: 50px; height: 50px;
-            background: var(--box-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            border-radius: 8px;
-            font-size: 28px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            transition: all 0.1s;
+            width: 50px; height: 50px; background: var(--box-bg);
+            border: 1px solid var(--border-color); color: var(--text-primary);
+            border-radius: 8px; font-size: 28px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.1s;
         }
         .dice:active { transform: scale(0.95); }
-        .dice.kept {
-            background: #ffec99;
-            border-color: #ffd43b;
-            color: #333;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
+        .dice.kept { background: #ffec99; border-color: #ffd43b; color: #333; transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 
-        /* 2. 점수판 영역 */
+        @keyframes roll-anim {
+            0% { transform: rotate(0deg) translateY(0); }
+            25% { transform: rotate(10deg) translateY(-2px); }
+            50% { transform: rotate(-10deg) translateY(0); }
+            75% { transform: rotate(5deg) translateY(-2px); }
+            100% { transform: rotate(0deg) translateY(0); }
+        }
+        .dice.rolling { animation: roll-anim 0.2s linear infinite; background-color: var(--row-hover); color: var(--text-secondary); }
+
         #score-section { flex: 1; overflow-y: auto; padding: 0; }
 
         .score-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .score-table th {
-            background: var(--bg-header);
-            color: var(--text-secondary);
-            padding: 10px 16px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-            font-weight: 600;
-            position: sticky; top: 0;
+            background: var(--bg-header); color: var(--text-secondary);
+            padding: 10px 16px; text-align: left;
+            border-bottom: 1px solid var(--border-color); font-weight: 600;
+            position: sticky; top: 0; z-index: 10;
         }
         .score-table td {
-            padding: 8px 16px;
-            border-bottom: 1px solid var(--border-color);
-            color: var(--text-primary);
-            height: 32px;
+            padding: 6px 16px; border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary); height: 28px;
         }
-        .category-name { font-weight: 600; color: var(--text-primary); }
+
+        /* 족보 이름 칸 */
+        .category-name {
+            font-weight: 600; color: var(--text-primary);
+            background-color: var(--bg-header); border-right: 1px solid var(--border-color);
+            width: 40%;
+        }
 
         .score-cell { cursor: pointer; text-align: center; }
         .score-cell:hover { background: var(--row-hover); }
-        .score-cell.filled {
-            background: var(--bg-header);
+        .score-cell.filled { background: var(--bg-header); color: var(--text-secondary); cursor: default; }
+
+        /* [추가] 합계 및 보너스 행 스타일 */
+        .summary-row td {
+            background-color: var(--row-hover);
+            font-weight: bold;
+            color: var(--link-color);
+            border-top: 2px solid var(--border-color); /* 구분선 강조 */
+        }
+        .summary-row .category-name {
             color: var(--text-secondary);
-            cursor: default;
+        }
+        .total-row td {
+            background-color: var(--text-primary);
+            color: var(--box-bg);
+            font-size: 14px;
+            font-weight: bold;
+            border-top: 2px solid var(--border-color);
+        }
+        .total-row .category-name {
+            background-color: var(--text-primary);
+            color: var(--box-bg);
         }
 
-        /* [우측 패널] */
         #right-panel {
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            background: var(--box-bg);
-            display: flex; flex-direction: column; height: 500px; flex: 1;
-            min-width: 300px;
+            border: 1px solid var(--border-color); border-radius: 6px; background: var(--box-bg);
+            display: flex; flex-direction: column; height: 600px; flex: 1; min-width: 300px;
         }
 
-        /* 유저 목록 스타일 */
-        #user-list-area {
-            flex: 0 0 150px;
-            border-bottom: 1px solid var(--border-color);
-            overflow-y: auto;
-            background: var(--box-bg);
-        }
-        .user-row {
-            padding: 10px 16px;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 13px;
-            color: var(--text-primary);
-        }
+        #user-list-area { flex: 0 0 150px; border-bottom: 1px solid var(--border-color); overflow-y: auto; background: var(--box-bg); }
+        .user-row { padding: 10px 16px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-primary); }
         .user-row:hover { background: var(--row-hover); }
-        .user-row.active {
-            background: var(--row-hover);
-            border-left: 3px solid var(--status-online);
-        }
+        .user-row.active { background: var(--row-hover); border-left: 3px solid var(--status-online); }
         .user-row.turn { font-weight: bold; color: var(--status-online); }
 
-        /* 채팅 영역 */
         #chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         #messages { flex: 1; overflow-y: auto; padding: 10px; font-size: 13px; color: var(--text-primary); }
 
-        /* [수정] 채팅 입력창 스타일 보강 */
-        .msg-input-box {
-            padding: 10px;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 5px;
-            background: var(--bg-header);
-        }
-        /* 입력창이 남은 공간을 차지하도록 설정 (width: 100% 무시) */
-        .msg-input-box input {
-            flex: 1;
-            width: auto;
-        }
-        /* 버튼 글씨가 세로로 찌그러지지 않도록 설정 */
-        .msg-input-box button {
-            white-space: nowrap;
-            flex-shrink: 0;
+        .msg-input-box { padding: 10px; border-top: 1px solid var(--border-color); display: flex; gap: 5px; background: var(--bg-header); }
+        .msg-input-box input { flex: 1; width: auto; }
+        .msg-input-box button { white-space: nowrap; flex-shrink: 0; }
+
+        .panel-header { padding: 8px 16px; background: var(--bg-header); border-bottom: 1px solid var(--border-color); font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+        .score-preview {
+            color: #aaa;       /* 연한 회색 */
+            font-style: italic; /* 기울임 */
+            font-size: 0.9em;
         }
 
-        /* 패널 헤더 */
-        .panel-header {
-            padding: 8px 16px;
-            background: var(--bg-header);
-            border-bottom: 1px solid var(--border-color);
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-secondary);
+        /* 다크모드 대응 (필요시 style.css에 추가해도 됨) */
+        body.dark-mode .score-preview {
+            color: #666;
         }
     </style>
 </head>
@@ -183,23 +148,18 @@
 </header>
 
 <div id="alert-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:2000;">
-    <div class="box" style="width:320px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin: 0;">
+    <div class="box" style="width:320px; margin: 0;">
         <div class="box-header">알림</div>
-        <div style="padding: 20px; text-align: center; color: var(--text-primary);">
-            <p id="alert-msg-text" style="margin: 0; word-break: keep-all;">메시지 내용</p>
-        </div>
+        <div style="padding: 20px; text-align: center;"><p id="alert-msg-text" style="margin:0;">메시지</p></div>
         <div style="padding:16px; border-top: 1px solid var(--border-color);">
             <button class="btn-primary" onclick="Core.closeAlert()" style="width: 100%;">확인</button>
         </div>
     </div>
 </div>
-
 <div id="confirm-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:2000;">
-    <div class="box" style="width:320px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin: 0;">
+    <div class="box" style="width:320px; margin: 0;">
         <div class="box-header">확인</div>
-        <div style="padding: 20px; text-align: center; color: var(--text-primary);">
-            <p id="confirm-msg-text" style="margin: 0; word-break: keep-all;">진행하시겠습니까?</p>
-        </div>
+        <div style="padding: 20px; text-align: center;"><p id="confirm-msg-text" style="margin:0;">진행?</p></div>
         <div style="padding:16px; border-top: 1px solid var(--border-color); display:flex; gap:10px;">
             <button class="btn-default" onclick="Core.closeConfirm()" style="flex:1;">취소</button>
             <button class="btn-primary" onclick="Core.confirmOk()" style="flex:1;">확인</button>
@@ -220,13 +180,16 @@
 
 <div id="lobby-screen" class="container hidden">
     <div class="box">
-        <div class="box-header">대기실 <span id="welcome-msg" style="font-size:12px; font-weight:normal;"></span></div>
+        <div class="box-header">대기실 <span id="welcome-msg"></span></div>
         <div style="padding: 16px; display:flex; gap:10px;">
             <input type="text" id="roomNameInput" placeholder="방 제목" value="새로운 게임방" style="flex:2;">
             <button class="btn-primary" onclick="Core.createRoom()">방 만들기</button>
         </div>
         <div style="max-height: 400px; overflow-y: auto;">
-            <div class="panel-header">방 목록</div>
+            <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>방 목록</span>
+                <button class="btn-default" onclick="Core.loadRooms()" style="padding: 2px 10px; font-size: 12px;">🔄 새로고침</button>
+            </div>
             <ul id="room-list" style="list-style: none; padding: 0; margin: 0;"></ul>
         </div>
     </div>
@@ -249,7 +212,7 @@
             <div id="dice-section">
                 <div class="turn-indicator" id="turn-msg" style="font-size:14px; font-weight:bold; color:var(--text-secondary); margin-bottom:5px;">게임 대기 중</div>
                 <div class="dice-wrap" id="dice-container">
-                    <div class="dice">?</div><div class="dice">?</div><div class="dice">?</div><div class="dice">?</div><div class="dice">?</div>
+                    <div class="dice">-</div><div class="dice">-</div><div class="dice">-</div><div class="dice">-</div><div class="dice">-</div>
                 </div>
                 <button class="btn-primary" id="btn-roll" onclick="Core.sendAction({actionType:'ROLL'})" style="margin-top:10px; padding: 5px 20px;" disabled>
                     굴리기 (<span id="roll-cnt">3</span>)
@@ -260,7 +223,7 @@
                 <table class="score-table">
                     <thead>
                     <tr>
-                        <th width="40%">족보</th>
+                        <th style="width:40%;">족보</th>
                         <th id="score-header-name">점수</th>
                     </tr>
                     </thead>
