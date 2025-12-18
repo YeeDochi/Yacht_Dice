@@ -124,14 +124,11 @@ public class YachtRoom extends BaseGameRoom {
             return (three && two) ? sum : 0;
         }
         if (category == 9) {
-            if ((counts[1]>0 && counts[2]>0 && counts[3]>0 && counts[4]>0) ||
-                    (counts[2]>0 && counts[3]>0 && counts[4]>0 && counts[5]>0) ||
-                    (counts[3]>0 && counts[4]>0 && counts[5]>0 && counts[6]>0)) return 15;
+            if ((counts[1]>0 && counts[2]>0 && counts[3]>0 && counts[4]>0 && counts[5]>0)) return 30;
             return 0;
         }
         if (category == 10) {
-            if ((counts[1]>0 && counts[2]>0 && counts[3]>0 && counts[4]>0 && counts[5]>0) ||
-                    (counts[2]>0 && counts[3]>0 && counts[4]>0 && counts[5]>0 && counts[6]>0)) return 30;
+            if ((counts[2]>0 && counts[3]>0 && counts[4]>0 && counts[5]>0 && counts[6]>0)) return 30;
             return 0;
         }
         if (category == 11) {
