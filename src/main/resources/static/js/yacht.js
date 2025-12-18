@@ -204,15 +204,12 @@ function calculatePotentialScore(categoryIdx, dice) {
     }
     // S. Straight (15점)
     if (categoryIdx === 9) {
-        if ((counts[1] && counts[2] && counts[3] && counts[4]) ||
-            (counts[2] && counts[3] && counts[4] && counts[5]) ||
-            (counts[3] && counts[4] && counts[5] && counts[6])) return 15;
+        if ((counts[1] && counts[2] && counts[3] && counts[4] && counts[5])) return 30;
         return 0;
     }
     // L. Straight (30점)
     if (categoryIdx === 10) {
-        if ((counts[1] && counts[2] && counts[3] && counts[4] && counts[5]) ||
-            (counts[2] && counts[3] && counts[4] && counts[5] && counts[6])) return 30;
+        if ((counts[2] && counts[3] && counts[4] && counts[5] && counts[6])) return 30;
         return 0;
     }
     // Yacht (50점)
