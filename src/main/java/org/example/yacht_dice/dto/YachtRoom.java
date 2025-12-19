@@ -31,7 +31,7 @@ public class YachtRoom extends BaseGameRoom {
     }
 
     @Override
-    public GameMessage handleAction(GameMessage message) {
+    public synchronized GameMessage handleAction(GameMessage message) {
         String type = (String) message.getData().get("actionType");
         String senderId = message.getSenderId();
 
@@ -203,5 +203,22 @@ public class YachtRoom extends BaseGameRoom {
                 "playerNames", playerNames
         ));
         return msg;
+    }
+    public Map<String, Object> getGameSnapshot() {
+        Map<String, String> playerNames = new HashMap<>();
+        for (Player p : users.values()) {
+            playerNames.put(p.getId(), p.getNickname());
+        }
+
+        // makeStateMessage 내부 로직과 동일한 데이터를 Map으로 반환
+        return Map.of(
+                "dice", dice,
+                "kept", kept,
+                "rollCount", rollCount,
+                "currentTurnId", currentTurnId != null ? currentTurnId : "",
+                "scoreBoards", scoreBoards,
+                "playerNames", playerNames,
+                "playing", playing // 게임 진행 중인지 여부도 추가하면 좋음
+        );
     }
 }

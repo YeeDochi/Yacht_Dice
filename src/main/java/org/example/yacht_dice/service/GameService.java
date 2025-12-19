@@ -40,6 +40,17 @@ public class GameService {
 //
 //            messagingTemplate.convertAndSend("/topic/" + roomId, syncMsg);
 //        }
+
+        if (room instanceof org.example.yacht_dice.dto.YachtRoom) { // 형변환 안전하게 체크
+            org.example.yacht_dice.dto.YachtRoom yachtRoom = (org.example.yacht_dice.dto.YachtRoom) room;
+
+            GameMessage syncMsg = new GameMessage();
+            syncMsg.setType("SYNC"); // 클라이언트 handleMessage가 처리할 수 있게
+            syncMsg.setRoomId(roomId);
+            syncMsg.setData(yachtRoom.getGameSnapshot());
+
+            broadcast(roomId, syncMsg);
+        }
     }
 
     // 게임 행동 처리 (핵심)
