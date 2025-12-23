@@ -27,8 +27,6 @@ const YachtGame = {
         updateControls(data, myId);
         updateDice(data, myId);
         renderUserList(data.scoreBoards, data.currentTurnId, myId);
-
-        // 점수판 그리기 (데이터에 dice 정보도 함께 넘겨줌)
         renderScoreBoard(data.scoreBoards, data.currentTurnId, myId, data.dice);
 
         if(data.rollCount !== undefined) {
@@ -37,7 +35,6 @@ const YachtGame = {
     }
 };
 
-// --- 기존 updateControls, updateDice, renderUserList 함수는 그대로 유지 ---
 function updateControls(data, myId) {
     const startBtn = document.getElementById('startBtn');
     const turnBadge = document.getElementById('game-status');
@@ -62,8 +59,10 @@ function updateControls(data, myId) {
         if(turnMsg) {
             turnMsg.innerText = isMyTurn ? "주사위를 굴리세요!" : "상대방이 고민 중...";
             turnMsg.style.color = isMyTurn ? "var(--status-online)" : "var(--text-secondary)";
+            turnMsg.style.fontWeight = "bold";
         }
         if(rollBtn) {
+            // 일단 데이터 기반으로 상태 설정 (updateDice에서 애니메이션 중이면 다시 잠금)
             rollBtn.disabled = !(isMyTurn && data.rollCount > 0);
         }
         if(rollCnt) rollCnt.innerText = (data.rollCount !== undefined) ? data.rollCount : 3;
@@ -72,10 +71,19 @@ function updateControls(data, myId) {
 
 function updateDice(data, myId) {
     const container = document.getElementById('dice-container');
+    const rollBtn = document.getElementById('btn-roll'); // 버튼 참조 추가
+
     if (!container || !data.dice) return;
 
     const shouldAnimate = (data.rollCount < YachtGame.lastRollCount);
 
+    // [기능 추가] 애니메이션 시작 시 버튼 잠금
+    if (shouldAnimate && rollBtn) {
+        rollBtn.disabled = true;
+        rollBtn.style.cursor = "wait";
+    }
+
+    // 컨테이너 초기화
     if (container.children.length === 0) {
         container.innerHTML = '';
         for(let i=0; i<5; i++) {
@@ -87,21 +95,33 @@ function updateDice(data, myId) {
 
     const diceDivs = container.querySelectorAll('.dice');
     const isMyTurn = (data.currentTurnId === myId);
-
     const diceFaces = ['-', '1', '2', '3', '4', '5', '6'];
 
-    data.dice.forEach((val, idx) => {
-        const d = diceDivs[idx];
-        const isKept = data.kept[idx];
+    // 주사위 정렬 매핑
+    let mappedDice = data.dice.map((val, idx) => ({
+        val: val,
+        kept: data.kept[idx],
+        origIdx: idx
+    }));
+
+    mappedDice.sort((a, b) => a.val - b.val);
+
+    mappedDice.forEach((item, visualIdx) => {
+        const d = diceDivs[visualIdx];
+        const val = item.val;
+        const isKept = item.kept;
+        const origIdx = item.origIdx;
 
         d.className = `dice ${isKept ? 'kept' : ''}`;
         d.onclick = null;
+
         if (isMyTurn && data.rollCount < 3) {
-            d.onclick = () => Core.sendAction({ actionType: 'TOGGLE_KEEP', index: idx });
+            d.onclick = () => Core.sendAction({ actionType: 'TOGGLE_KEEP', index: origIdx });
         }
 
         if (shouldAnimate && !isKept && val !== 0) {
             d.classList.add('rolling');
+
             let interval = setInterval(() => {
                 d.innerText = Math.floor(Math.random() * 6) + 1;
             }, 50);
@@ -117,6 +137,83 @@ function updateDice(data, myId) {
             }
         }
     });
+
+    // 족보 체크 및 버튼 잠금 해제 로직
+    if (shouldAnimate) {
+        setTimeout(() => {
+            checkAndShowRank(data.dice, isMyTurn);
+
+            // [기능 추가] 애니메이션 끝난 후 버튼 상태 복구
+            if (rollBtn) {
+                rollBtn.style.cursor = ""; // 커서 복구
+                // 내 턴이고 굴릴 기회가 남았다면 다시 활성화
+                if (isMyTurn && data.rollCount > 0) {
+                    rollBtn.disabled = false;
+                }
+            }
+        }, 600);
+    } else {
+        checkAndShowRank(data.dice, isMyTurn);
+    }
+}
+
+function checkAndShowRank(dice, isMyTurn) {
+    if (!isMyTurn) return;
+
+    const turnMsg = document.getElementById('turn-msg');
+    if (!turnMsg) return;
+
+    if (!dice || dice.includes(0)) return;
+
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    dice.forEach(d => counts[d]++);
+
+    let msg = "";
+    let isHighRank = false;
+
+    // 1. Yacht
+    if (counts.some(c => c === 5)) {
+        msg = "✨ YACHT! (50점) ✨";
+        isHighRank = true;
+    }
+    // 2. 4 of a Kind
+    else if (counts.some(c => c >= 4)) {
+        msg = "🔥 4 of a Kind 🔥";
+        isHighRank = true;
+    }
+    // 3. Full House
+    else if (counts.some(c => c === 3) && counts.some(c => c === 2)) {
+        msg = "🏠 Full House 🏠";
+        isHighRank = true;
+    }
+    // 4. Large Straight
+    else if (counts[2] && counts[3] && counts[4] && counts[5] && counts[6]) {
+        msg = "📏 Large Straight (30점)";
+        isHighRank = true;
+    }
+    // 5. Small Straight
+    else if (counts[1] && counts[2] && counts[3] && counts[4] && counts[5]) {
+        msg = "📏 Small Straight (30점)";
+        isHighRank = true;
+    }
+
+    if (msg) {
+        turnMsg.innerText = msg;
+        turnMsg.style.color = "#ff4500";
+
+        turnMsg.style.animation = 'none';
+        turnMsg.offsetHeight;
+        turnMsg.style.animation = "pop 0.3s ease-out";
+
+        if (isHighRank && window.confetti) {
+            confetti({
+                particleCount: 50,
+                spread: 60,
+                origin: { y: 0.65 },
+                colors: ['#FFD700', '#FFA500', '#FF4500']
+            });
+        }
+    }
 }
 
 function renderUserList(scoreBoards, currentTurnId, myId) {
@@ -161,7 +258,6 @@ function renderUserList(scoreBoards, currentTurnId, myId) {
         div.onclick = () => {
             YachtGame.viewingPlayerId = pid;
             renderUserList(scoreBoards, currentTurnId, myId);
-            // 점수판 갱신 시 주사위 정보가 없으면 미리보기가 안 나올 수 있으므로 주의 (여기선 일단 갱신만)
             const lastData = YachtGame.lastGameData || {};
             renderScoreBoard(scoreBoards, currentTurnId, myId, lastData.dice);
         };
@@ -169,10 +265,8 @@ function renderUserList(scoreBoards, currentTurnId, myId) {
     });
 }
 
-// -----------------------------------------------------------
-// [핵심] 점수 미리보기 계산 함수 (서버 로직의 JS 버전)
 function calculatePotentialScore(categoryIdx, dice) {
-    if (!dice || dice.includes(0)) return 0; // 주사위가 없거나 굴리기 전이면 0
+    if (!dice || dice.includes(0)) return 0;
 
     const counts = [0, 0, 0, 0, 0, 0, 0];
     let sum = 0;
@@ -181,18 +275,14 @@ function calculatePotentialScore(categoryIdx, dice) {
         sum += d;
     }
 
-    // 1~6 (Ones ~ Sixes)
     if (categoryIdx >= 0 && categoryIdx <= 5) {
         return counts[categoryIdx + 1] * (categoryIdx + 1);
     }
-    // Choice
     if (categoryIdx === 6) return sum;
-    // 4 of a Kind
     if (categoryIdx === 7) {
         for (let i = 1; i <= 6; i++) if (counts[i] >= 4) return sum;
         return 0;
     }
-    // Full House
     if (categoryIdx === 8) {
         let three = false, two = false;
         for (let i = 1; i <= 6; i++) {
@@ -202,17 +292,14 @@ function calculatePotentialScore(categoryIdx, dice) {
         }
         return (three && two) ? sum : 0;
     }
-    // S. Straight (15점)
     if (categoryIdx === 9) {
         if ((counts[1] && counts[2] && counts[3] && counts[4] && counts[5])) return 30;
         return 0;
     }
-    // L. Straight (30점)
     if (categoryIdx === 10) {
         if ((counts[2] && counts[3] && counts[4] && counts[5] && counts[6])) return 30;
         return 0;
     }
-    // Yacht (50점)
     if (categoryIdx === 11) {
         for (let i = 1; i <= 6; i++) if (counts[i] === 5) return 50;
         return 0;
@@ -220,9 +307,7 @@ function calculatePotentialScore(categoryIdx, dice) {
     return 0;
 }
 
-// 점수판 렌더링 (미리보기 포함)
 function renderScoreBoard(scoreBoards, currentTurnId, myId, currentDice) {
-    // 미리보기를 위해 데이터를 저장해둠 (목록 클릭 시 사용)
     if(currentDice) YachtGame.lastGameData = { dice: currentDice };
     else if(YachtGame.lastGameData) currentDice = YachtGame.lastGameData.dice;
 
@@ -243,7 +328,6 @@ function renderScoreBoard(scoreBoards, currentTurnId, myId, currentDice) {
 
     const categories = ["Ones", "Twos", "Threes", "Fours", "Fives", "Sixes", "Choice", "4 of Kind", "Full House", "S.Straight", "L.Straight", "Yacht"];
 
-    // 1. 상단
     let subTotal = 0;
     for (let i = 0; i < 6; i++) {
         const score = scores[i];
@@ -255,7 +339,6 @@ function renderScoreBoard(scoreBoards, currentTurnId, myId, currentDice) {
     tbody.appendChild(createSummaryRow("Subtotal (63+)", `${subTotal} / 63`));
     tbody.appendChild(createSummaryRow("Bonus (+35)", `+${bonus}`));
 
-    // 2. 하단
     let lowerTotal = 0;
     for (let i = 6; i < 12; i++) {
         const score = scores[i];
@@ -263,14 +346,12 @@ function renderScoreBoard(scoreBoards, currentTurnId, myId, currentDice) {
         tbody.appendChild(createRow(categories[i], score, i, targetId, myId, currentTurnId, currentDice));
     }
 
-    // 3. 총점
     const grandTotal = subTotal + bonus + lowerTotal;
     const totalRow = createSummaryRow("TOTAL", grandTotal);
     totalRow.className = "total-row";
     tbody.appendChild(totalRow);
 }
 
-// 행 생성 (미리보기 로직 적용)
 function createRow(name, score, idx, targetId, myId, currentTurnId, currentDice) {
     const tr = document.createElement('tr');
 
@@ -283,24 +364,19 @@ function createRow(name, score, idx, targetId, myId, currentTurnId, currentDice)
     tdScore.className = 'score-cell';
 
     if (score !== -1) {
-        // 이미 확정된 점수
         tdScore.innerText = score;
         tdScore.classList.add('filled');
     } else {
-        // 빈 칸
         if (targetId === myId && currentTurnId === myId) {
-            // [미리보기] 내 턴이고 아직 안 채운 칸이면 예상 점수 표시
             if (currentDice && !currentDice.includes(0)) {
                 const potential = calculatePotentialScore(idx, currentDice);
                 tdScore.innerText = potential;
-                tdScore.classList.add('score-preview'); // 회색 글씨 스타일
+                tdScore.classList.add('score-preview');
             } else {
                 tdScore.innerText = '';
             }
 
-            // 클릭 이벤트
             tdScore.onclick = () => {
-                // 클릭 시 현재 보여지는 미리보기 점수도 함께 안내하면 좋음
                 const potential = (currentDice && !currentDice.includes(0)) ? calculatePotentialScore(idx, currentDice) : 0;
                 Core.showConfirm(`[${name}] ${potential}점으로 확정하시겠습니까?`, () => {
                     Core.sendAction({ actionType: 'SUBMIT', categoryIdx: idx });
