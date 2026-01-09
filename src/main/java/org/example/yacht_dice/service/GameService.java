@@ -1,6 +1,7 @@
 package org.example.yacht_dice.service;
 
 import lombok.RequiredArgsConstructor;
+import org.example.common.service.ScoreSender;
 import org.example.yacht_dice.dto.BaseGameRoom;
 import org.example.yacht_dice.dto.GameMessage;
 import org.example.yacht_dice.dto.Player;
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Service;
 public class GameService {
     private final RoomService roomService;
     private final SimpMessagingTemplate messagingTemplate;
-
+    private final ScoreSender scoreSender;
     // 입장 처리
     public void join(String roomId, GameMessage message) {
         BaseGameRoom room = roomService.findRoom(roomId);

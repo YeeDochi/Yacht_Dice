@@ -178,8 +178,8 @@ public class YachtRoom extends BaseGameRoom {
         msg.setType("GAME_OVER");
         msg.setRoomId(this.roomId);
         msg.setContent("게임 종료! 승자: " + winner);
-        msg.setData(dataMap);
 
+        msg.setData(dataMap);
         return msg;
     }
 
