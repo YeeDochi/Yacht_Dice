@@ -8,6 +8,9 @@ import org.example.yacht_dice.dto.Player;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class GameService {
@@ -19,7 +22,18 @@ public class GameService {
         BaseGameRoom room = roomService.findRoom(roomId);
         if (room == null) return;
 
-        room.enterUser(new Player(message.getSender(), message.getSenderId()));
+        Player newPlayer = new Player(message.getSender(), message.getSenderId());
+
+        if (message.getData() != null && message.getData().containsKey("dbUsername")) {
+            String realId = (String) message.getData().get("dbUsername");
+
+            if (realId != null && !realId.equals("null") && !realId.isEmpty()) {
+                newPlayer.setDbUsername(realId);
+                System.out.println("✅ 로그인 유저 입장: " + newPlayer.getNickname() + " (" + realId + ")");
+            }
+        }
+
+        room.enterUser(newPlayer);
 
         message.setType("JOIN");
         message.setContent(message.getSender() + "님이 입장하셨습니다.");
@@ -63,6 +77,9 @@ public class GameService {
 
         if (result != null) {
             broadcast(roomId, result);
+            if(result.getType().equals("GAME_OVER")){
+                endGame(roomId, new ArrayList<>(room.getUsers().values()));
+            }
         }
     }
 
@@ -82,7 +99,25 @@ public class GameService {
             }
         }
     }
+    public void endGame(String roomId, List<Player> players) {
 
+        for (Player player : players) {
+            // 1. 비회원(dbUsername이 없음)이면 점수 저장 패스
+            if (player.getDbUsername() == null) {
+                System.out.println("비회원 플레이어 점수 저장 건너뜀: " + player.getNickname());
+                continue;
+            }
+
+            int totalScore = roomService.findRoom(roomId).getTotalScore(player.getId());
+
+            scoreSender.sendScore(
+                    player.getDbUsername(), // 여기가 중요합니다!
+                    "Yacht_Dice",
+                    totalScore,
+                    true
+            );
+        }
+    }
     private void broadcast(String roomId, GameMessage message) {
         messagingTemplate.convertAndSend("/topic/" + roomId, message);
     }

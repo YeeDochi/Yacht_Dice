@@ -2,6 +2,7 @@ package org.example.yacht_dice.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.example.yacht_dice.dto.BaseGameRoom;
+import org.example.yacht_dice.dto.YachtRoom;
 import org.example.yacht_dice.service.RoomService;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,7 +20,7 @@ public class RoomController {
 
     // 1. 방 목록 조회 (GET /api/rooms)
     @GetMapping
-    public List<BaseGameRoom> findAllRooms() {
+    public List<YachtRoom> findAllRooms() {
         return roomService.findAll();
     }
 

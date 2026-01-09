@@ -9,6 +9,13 @@ public class YachtRoom extends BaseGameRoom {
 
     private Map<String, Integer[]> scoreBoards = new HashMap<>();
 
+    public int getTotalScore(String playerId) {
+        int result =0;
+        Integer[] scores = scoreBoards.get(playerId);
+        for( int score: scores) result+=score;
+        return  result;
+    }
+
     public YachtRoom(String name) {
         super(name);
     }

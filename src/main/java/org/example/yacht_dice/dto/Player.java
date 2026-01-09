@@ -10,7 +10,7 @@ import java.util.Map;
 public class Player {
     private String id;        // 고유 ID (UUID)
     private String nickname;  // 닉네임
-
+    private String dbUsername;
     private Map<String, Object> attributes = new HashMap<>();
 
     public Player(String nickname, String id) {
