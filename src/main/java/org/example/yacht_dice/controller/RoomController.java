@@ -1,9 +1,11 @@
 package org.example.yacht_dice.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.example.common.service.ScoreSender;
 import org.example.yacht_dice.dto.BaseGameRoom;
 import org.example.yacht_dice.dto.YachtRoom;
 import org.example.yacht_dice.service.RoomService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,7 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RoomController {
     private final RoomService roomService;
-
+    private final ScoreSender scoreSender;
     @RequestMapping(method = RequestMethod.HEAD)
     public void healthCheck() {
     }
@@ -35,4 +37,11 @@ public class RoomController {
     public BaseGameRoom getRoom(@PathVariable String roomId) {
         return roomService.findRoom(roomId);
     }
+
+    @GetMapping("/rankings")
+    public ResponseEntity<Object> getRanking() {
+        return scoreSender.ranking("Yacht_Dice");
+    }
+
 }
+

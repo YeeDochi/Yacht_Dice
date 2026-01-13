@@ -76,10 +76,12 @@ public class GameService {
         GameMessage result = room.handleAction(message);
 
         if (result != null) {
-            broadcast(roomId, result);
             if(result.getType().equals("GAME_OVER")){
+                System.out.println(room.getUsers().values());
                 endGame(roomId, new ArrayList<>(room.getUsers().values()));
             }
+            broadcast(roomId, result);
+
         }
     }
 

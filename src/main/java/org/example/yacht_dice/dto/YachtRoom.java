@@ -1,6 +1,10 @@
 package org.example.yacht_dice.dto;
-import java.util.*;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.util.*;
+@Getter
+@Setter
 public class YachtRoom extends BaseGameRoom {
     private int[] dice = new int[]{0, 0, 0, 0, 0}; // 초기값 0으로 설정
     private boolean[] kept = new boolean[5];

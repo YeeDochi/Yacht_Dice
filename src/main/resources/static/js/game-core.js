@@ -34,10 +34,42 @@ const Core = (function() {
         if (savedTheme === 'dark') document.body.classList.add('dark-mode');
         else document.body.classList.remove('dark-mode');
 
-        const savedNick = localStorage.getItem('nickname'); // 허브에서 로그인할 때 저장한 닉네임
+        // 👇 [수정됨] 닉네임 감지 로직 강화
+        let savedNick = localStorage.getItem('nickname');
+
+        // 1. 닉네임이 없으면 토큰에서 추출 시도
+        if (!savedNick) {
+            const token = localStorage.getItem('token') || localStorage.getItem('jwt'); // 'token' 키 확인
+            if (token) {
+                try {
+                    // JWT 페이로드 디코딩 (base64)
+                    const base64Url = token.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                    }).join(''));
+
+                    const payload = JSON.parse(jsonPayload);
+
+                    // 토큰 안에 닉네임이 있는지 확인 (JwtUtil 구현에 따라 다름)
+                    // 보통 nickname, name, sub 중 하나에 들어있음
+                    if (payload.nickname) savedNick = payload.nickname;
+                    else if (payload.name) savedNick = payload.name;
+                    else if (payload.sub) savedNick = payload.sub; // sub를 닉네임으로 쓰는 경우
+
+                    if(savedNick) {
+                        console.log("토큰에서 닉네임 추출 성공: " + savedNick);
+                        localStorage.setItem('nickname', savedNick); // 다음을 위해 저장
+                    }
+                } catch (e) {
+                    console.warn("토큰 파싱 실패:", e);
+                }
+            }
+        }
+
         if(savedNick) {
             console.log("자동 로그인 감지: " + savedNick);
-            myNickname = savedNick; // 닉네임 설정
+            myNickname = savedNick;
 
             // UI 바로 넘기기 (입력창 숨김 -> 로비 표시)
             const welcome = document.getElementById('welcome-msg');
@@ -46,10 +78,10 @@ const Core = (function() {
             const loginScreen = document.getElementById('login-screen');
             const lobbyScreen = document.getElementById('lobby-screen');
 
-            if(loginScreen) loginScreen.classList.add('hidden'); // 입력창 숨김
-            if(lobbyScreen) lobbyScreen.classList.remove('hidden'); // 로비 보여줌
+            if(loginScreen) loginScreen.classList.add('hidden');
+            if(lobbyScreen) lobbyScreen.classList.remove('hidden');
 
-            loadRooms(); // 방 목록 불러오기
+            loadRooms();
         }
         console.log("[GameCore] Initialized");
     }
@@ -120,7 +152,17 @@ const Core = (function() {
         stompClient = Stomp.over(socket);
         stompClient.debug = null;
         stompClient.connect({}, function () {
-            stompClient.send(`/app/${roomId}/join`, {}, JSON.stringify({ type: 'JOIN', sender: myNickname, senderId: myId }));
+            // 👇 1. 여기서 joinData를 아주 잘 만드셨습니다.
+            const joinData = {
+                type: 'JOIN',
+                sender: myNickname,
+                senderId: myId,
+                data: {
+                    dbUsername: localStorage.getItem('username')
+                }
+            };
+
+            stompClient.send(`/app/${roomId}/join`, {}, JSON.stringify(joinData));
             stompClient.subscribe(`/topic/${roomId}`, function (msg) {
                 handleCommonMessage(JSON.parse(msg.body));
             });
@@ -187,12 +229,54 @@ const Core = (function() {
         if (pendingConfirmCallback) pendingConfirmCallback();
         closeConfirm();
     }
+    function showRanking() {
 
+        fetch(`${CONFIG.apiPath}/api/rooms/rankings?gameType=${CONFIG.apiPath.substring(1)}`)
+            .then(res => {
+                if(!res.ok) throw new Error("랭킹 로드 실패");
+                return res.json();
+            })
+            .then(records => {
+                const tbody = document.getElementById('ranking-list-body');
+                tbody.innerHTML = '';
+
+                if (!records || records.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:#888;">등록된 랭킹이 없습니다.</td></tr>';
+                } else {
+                    records.forEach((rec, index) => {
+                        // 1,2,3등은 메달 아이콘 표시
+                        let rankDisplay = index + 1;
+                        if(index === 0) rankDisplay = "🥇";
+                        else if(index === 1) rankDisplay = "🥈";
+                        else if(index === 2) rankDisplay = "🥉";
+
+                        const tr = document.createElement('tr');
+                        // 유저 닉네임은 user 객체 안에 있음
+                        const nickname = rec.user ? rec.user.nickname : "Unknown";
+
+                        tr.innerHTML = `
+                            <td style="text-align:center; font-weight:bold; font-size:1.1em;">${rankDisplay}</td>
+                            <td style="text-align:left;">${nickname}</td>
+                            <td style="text-align:right; font-weight:bold; color:#d9534f;">${rec.score.toLocaleString()}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+                document.getElementById('leaderboard-modal').classList.remove('hidden');
+            })
+            .catch(err => showAlert("랭킹을 불러오지 못했습니다: " + err));
+    }
+
+    function closeLeaderboard() {
+        document.getElementById('leaderboard-modal').classList.add('hidden');
+    }
     return {
         init, login, createRoom, joinRoom, loadRooms, sendChat,
         showAlert, closeAlert,
         showConfirm, closeConfirm, confirmOk, // 모달 함수들 공개
         closeRanking, exitRoom, toggleTheme,
+        showRanking,      // 👈 추가
+        closeLeaderboard,
         startGame: () => sendActionInternal({ actionType: 'START' }),
         sendAction: (data) => sendActionInternal(data)
     };
