@@ -122,7 +122,35 @@ const Core = (function() {
             .then(room => joinRoom(room.roomId, room.roomName))
             .catch(err => showAlert("방 생성 실패: " + err));
     }
+    function refreshUserCount() {
+        if (!currentRoomId) return;
 
+        // 아까 보여주신 getRoom API 호출
+        fetch(`${CONFIG.apiPath}/api/rooms/${currentRoomId}`)
+            .then(res => res.json())
+            .then(room => {
+                const countEl = document.getElementById('room-user-count');
+                if (countEl && room.users) {
+                    // 1. 서버에서 받은 유저 값(닉네임들)을 배열로 추출
+                    const userValues = Object.values(room.users);
+                    let count = userValues.length;
+
+                    // 2. 내 닉네임이 명단에 있는지 확인 (단순 문자열이거나, 객체일 경우 nickname 필드 확인)
+                    const amIInTheList = userValues.some(u =>
+                        (typeof u === 'string' && u === myNickname) ||
+                        (typeof u === 'object' && u.nickname === myNickname)
+                    );
+
+                    // 3. 나는 분명 들어와 있는데 명단에 없다면? -> 보여주기용 카운트에 +1
+                    if (!amIInTheList) {
+                        count += 1;
+                    }
+
+                    countEl.innerText = `👥 ${count}명`;
+                }
+            })
+            .catch(err => console.error("인원수 갱신 실패", err));
+    }
     // --- [중요 수정] 입장 로직 ---
     function joinRoom(roomId, roomName) {
         fetch(`${CONFIG.apiPath}/api/rooms/${roomId}`)
@@ -131,7 +159,7 @@ const Core = (function() {
                 currentRoomId = roomId;
                 const titleText = document.getElementById('room-title-text');
                 if(titleText) titleText.innerText = roomName;
-
+                refreshUserCount();
                 document.getElementById('lobby-screen').classList.add('hidden');
                 document.getElementById('game-screen').classList.remove('hidden');
                 document.getElementById('messages').innerHTML = '';
@@ -173,10 +201,20 @@ const Core = (function() {
 
     function handleCommonMessage(msg) {
         if (msg.type === 'CHAT') {
-            showChat(msg.sender, msg.content); // 이제 content안에 <img> 태그가 들어있어서 바로 렌더링됨
+            showChat(msg.sender, msg.content);
+        }
+        else if (msg.type === 'JOIN') {
+            showChat('SYSTEM', msg.content);
+            setTimeout(() => refreshUserCount(), 500);
+            refreshUserCount();
+            if (GameImpl.handleMessage) GameImpl.handleMessage(msg, myId);
         }
         else if (msg.type === 'EXIT') {
-            showChat('SYSTEM', msg.content);
+            const exitMsg = msg.content ? msg.content : `${msg.sender}님이 퇴장하셨습니다.`;
+            showChat('SYSTEM', exitMsg);
+            setTimeout(() => refreshUserCount(), 500);
+            refreshUserCount();
+            if (GameImpl.handleMessage) GameImpl.handleMessage(msg, myId);
         }
         else if (msg.type === 'GAME_OVER') {
             document.getElementById('ranking-modal').classList.remove('hidden');
@@ -197,10 +235,43 @@ const Core = (function() {
 
     function showChat(sender, msg) {
         const div = document.createElement('div');
-        div.className = sender === 'SYSTEM' ? 'msg-system' : 'msg-item';
-        div.innerHTML = sender === 'SYSTEM' ? msg : `<span style="font-weight:bold;">${sender}</span>: ${msg}`;
+        const isMe = (sender === myNickname);
+
+        if (sender === 'SYSTEM') {
+            div.className = 'msg-system';
+            div.innerHTML = `<span class="badge" style="background:var(--border-color); color:var(--text-primary);">${msg}</span>`;
+        } else {
+            // 1. 레이아웃 클래스 결정 (내가 보낸건 right, 남은 left)
+            div.className = isMe ? 'msg-row msg-right' : 'msg-row msg-left';
+
+            // 2. HTML 구조 조립 (말풍선 디자인)
+            let html = '';
+
+            // 남이 보낸 메시지는 위에 '닉네임'을 작게 표시
+            if (!isMe) {
+                html += `<div class="msg-name">${sender}</div>`;
+            }
+
+            // 메시지 내용 (말풍선)
+            // 이미지가 포함된 경우 말풍선 스타일을 조금 다르게 주거나 그대로 둠
+            html += `<div class="msg-bubble">${msg}</div>`;
+
+            div.innerHTML = html;
+        }
+
         const box = document.getElementById('messages');
-        if(box) { box.appendChild(div); box.scrollTop = box.scrollHeight; }
+        if(box) {
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+
+            // 이미지 로딩 대응
+            const images = div.querySelectorAll('img');
+            if(images.length > 0) {
+                images.forEach(img => {
+                    img.onload = () => { box.scrollTop = box.scrollHeight; };
+                });
+            }
+        }
     }
 
     function showAlert(msg) {
@@ -233,6 +304,16 @@ const Core = (function() {
         if (pendingConfirmCallback) pendingConfirmCallback();
         closeConfirm();
     }
+    function getUserBadge(winCount) {
+        if (!winCount) winCount = 0; // null/undefined 방지
+
+        if (winCount >= 50) return "👑"; // 50승 이상: 왕관 (King)
+        if (winCount >= 30) return "💎"; // 30승 이상: 다이아
+        if (winCount >= 10) return "🥇"; // 10승 이상: 금메달
+        if (winCount >= 5)  return "🥈"; // 5승 이상: 은메달
+        if (winCount >= 1)  return "🥉"; // 1승 이상: 동메달
+        return "🌱";                     // 0승: 새싹
+    }
     function showRanking() {
 
         fetch(`${CONFIG.apiPath}/api/rooms/rankings?gameType=${CONFIG.apiPath.substring(1)}`)
@@ -257,11 +338,18 @@ const Core = (function() {
                         const tr = document.createElement('tr');
                         // 유저 닉네임은 user 객체 안에 있음
                         const nickname = rec.user ? rec.user.nickname : "Unknown";
-
-                        tr.innerHTML = `
-                            <td style="text-align:center; font-weight:bold; font-size:1.1em;">${rankDisplay}</td>
-                            <td style="text-align:left;">${nickname}</td>
-                            <td style="text-align:right; font-weight:bold; color:#d9534f;">${rec.score.toLocaleString()}</td>
+                        const badge = getUserBadge(rec.count);
+                        const tooltip = `${rec.count}승 달성`;
+                        tr.innerHTML = `    
+                           <td style="text-align:center; font-weight:bold; font-size:1.1em;">${rankDisplay}</td>
+                            <td style="text-align:left;">
+                                <span title="${tooltip}" style="cursor:help; margin-right:4px;">${badge}</span>
+                                ${nickname}
+                            </td>
+                            <td style="text-align:right; font-weight:bold; color:#d9534f;">
+                                ${rec.score.toLocaleString()}
+                                <div style="font-size:0.7em; color:#888; font-weight:normal;">(${rec.count}승)</div>
+                            </td>
                         `;
                         tbody.appendChild(tr);
                     });
@@ -461,7 +549,7 @@ const Core = (function() {
     function sendImageMessage(url) {
         if (!stompClient || !currentRoomId) return;
 
-        const imgTag = `<br><img src="${url}" width="200" style="border-radius:5px; vertical-align:middle;">`;
+        const imgTag = `<br><img src="${url}" class="chat-img">`;
 
         stompClient.send(`/app/${currentRoomId}/chat`, {}, JSON.stringify({
             type: 'CHAT',    // [변경] IMAGE -> CHAT (일반 채팅으로 취급)

@@ -5,6 +5,7 @@ import org.example.common.service.ScoreSender;
 import org.example.yacht_dice.dto.BaseGameRoom;
 import org.example.yacht_dice.dto.GameMessage;
 import org.example.yacht_dice.dto.Player;
+import org.example.yacht_dice.dto.YachtRoom;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -102,22 +103,34 @@ public class GameService {
         }
     }
     public void endGame(String roomId, List<Player> players) {
+        YachtRoom room = roomService.findRoom(roomId);
+        if (room == null) return;
+
+        int maxScore = -1;
+        for (Player player : players) {
+            int score = room.getTotalScore(player.getId());
+            if (score > maxScore) {
+                maxScore = score;
+            }
+        }
 
         for (Player player : players) {
-            // 1. 비회원(dbUsername이 없음)이면 점수 저장 패스
+            // 비회원 건너뛰기
             if (player.getDbUsername() == null) {
-                System.out.println("비회원 플레이어 점수 저장 건너뜀: " + player.getNickname());
                 continue;
             }
 
-            int totalScore = roomService.findRoom(roomId).getTotalScore(player.getId());
+            int myScore = room.getTotalScore(player.getId());
 
-            scoreSender.sendScore(
-                    player.getDbUsername(), // 여기가 중요합니다!
-                    "Yacht_Dice",
-                    totalScore,
-                    true
-            );
+            if (myScore == maxScore) {
+                System.out.println("🏆 승리자 점수 전송: " + player.getNickname() + " (" + myScore + "점)");
+
+                scoreSender.sendScore(
+                        player.getDbUsername(),
+                        "Yacht_Dice",
+                        myScore
+                );
+            }
         }
     }
     private void broadcast(String roomId, GameMessage message) {

@@ -14,10 +14,29 @@ public class YachtRoom extends BaseGameRoom {
     private Map<String, Integer[]> scoreBoards = new HashMap<>();
 
     public int getTotalScore(String playerId) {
-        int result =0;
+        int result = 0;
         Integer[] scores = scoreBoards.get(playerId);
-        for( int score: scores) result+=score;
-        return  result;
+
+        if (scores == null) return 0; // 안전 장치
+
+        int subTotalTop = 0; // 상단부(1~6) 합계
+
+        for (int i = 0; i < scores.length; i++) {
+            int score = (scores[i] == -1) ? 0 : scores[i]; // -1은 0점으로 처리
+            result += score;
+
+            // 인덱스 0~5는 상단부 (Aces ~ Sixes)
+            if (i <= 5) {
+                subTotalTop += score;
+            }
+        }
+
+        // ★ 보너스 점수 로직 추가
+        if (subTotalTop >= 63) {
+            result += 35;
+        }
+
+        return result;
     }
 
     public YachtRoom(String name) {
