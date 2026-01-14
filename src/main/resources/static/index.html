@@ -147,26 +147,6 @@
     <button class="theme-btn" onclick="Core.toggleTheme()">Dark/Light</button>
 </header>
 
-<div id="alert-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:2000;">
-    <div class="box" style="width:320px; margin: 0;">
-        <div class="box-header">알림</div>
-        <div style="padding: 20px; text-align: center;"><p id="alert-msg-text" style="margin:0;">메시지</p></div>
-        <div style="padding:16px; border-top: 1px solid var(--border-color);">
-            <button class="btn-primary" onclick="Core.closeAlert()" style="width: 100%;">확인</button>
-        </div>
-    </div>
-</div>
-<div id="confirm-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:2000;">
-    <div class="box" style="width:320px; margin: 0;">
-        <div class="box-header">확인</div>
-        <div style="padding: 20px; text-align: center;"><p id="confirm-msg-text" style="margin:0;">진행?</p></div>
-        <div style="padding:16px; border-top: 1px solid var(--border-color); display:flex; gap:10px;">
-            <button class="btn-default" onclick="Core.closeConfirm()" style="flex:1;">취소</button>
-            <button class="btn-primary" onclick="Core.confirmOk()" style="flex:1;">확인</button>
-        </div>
-    </div>
-</div>
-
 <div id="login-screen" class="container" style="max-width: 400px; margin-top: 50px;">
     <div class="box">
         <div class="box-header">게임 입장</div>
@@ -241,10 +221,43 @@
             <div class="panel-header" style="border-top:1px solid var(--border-color);">채팅</div>
             <div id="chat-area">
                 <div id="messages"></div>
+
                 <div class="msg-input-box">
+                    <button class="btn-default" onclick="Core.openImageModal()" style="padding: 0 8px; margin-right:5px;" title="이미지 전송">
+                        <i class="fas fa-images"></i>
+                    </button>
+
                     <input type="text" id="chatInput" placeholder="입력..." onkeypress="if(event.key==='Enter') Core.sendChat()">
                     <button class="btn-primary" onclick="Core.sendChat()">전송</button>
                 </div>
+            </div>
+        </div>
+
+        <div id="image-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; display:flex; justify-content:center; align-items:center;">
+            <div class="box" style="width: 500px; height: 600px; display:flex; flex-direction:column; background:var(--box-bg); padding:0; margin:0;">
+
+                <div style="padding:15px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+                    <strong>이미지 갤러리</strong>
+                    <button onclick="Core.closeImageModal()" style="background:none; border:none; color:var(--text-primary); cursor:pointer; font-size:1.2em;">&times;</button>
+                </div>
+
+                <div style="padding:15px; border-bottom:1px solid var(--border-color); background:rgba(0,0,0,0.02);">
+                    <div style="display:flex; gap:5px; margin-bottom:10px;">
+                        <input type="text" id="linkInput" placeholder="이미지 주소(URL) 붙여넣기" style="flex:1; padding:8px; border:1px solid var(--border-color); border-radius:4px;">
+                        <button class="btn-primary" onclick="Core.addExternalLink()" style="width:80px;">등록</button>
+                    </div>
+
+                    <input type="file" id="uploadInput" accept="image/*" style="display:none;" onchange="Core.uploadFile(this)">
+                    <button class="btn-default" onclick="document.getElementById('uploadInput').click()" style="width:100%; padding:8px; border:1px dashed var(--text-secondary);">
+                        <i class="fas fa-plus"></i> 내 컴퓨터에서 업로드
+                    </button>
+                </div>
+
+                <div id="gallery-area" style="flex:1; padding:15px; overflow-y:auto;">
+                    <div id="server-img-list" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;">
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -284,6 +297,27 @@
         </div>
     </div>
 </div>
+<div id="alert-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:10000;">
+    <div class="box" style="width:320px; margin: 0;">
+        <div class="box-header">알림</div>
+        <div style="padding: 20px; text-align: center;"><p id="alert-msg-text" style="margin:0;">메시지</p></div>
+        <div style="padding:16px; border-top: 1px solid var(--border-color);">
+            <button class="btn-primary" onclick="Core.closeAlert()" style="width: 100%;">확인</button>
+        </div>
+    </div>
+</div>
+
+<div id="confirm-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:10000;">
+    <div class="box" style="width:320px; margin: 0;">
+        <div class="box-header">확인</div>
+        <div style="padding: 20px; text-align: center;"><p id="confirm-msg-text" style="margin:0;">진행?</p></div>
+        <div style="padding:16px; border-top: 1px solid var(--border-color); display:flex; gap:10px;">
+            <button class="btn-default" onclick="Core.closeConfirm()" style="flex:1;">취소</button>
+            <button class="btn-primary" onclick="Core.confirmOk()" style="flex:1;">확인</button>
+        </div>
+    </div>
+</div>
+
 <script src="/Yacht_Dice/js/game-core.js"></script>
 <script src="/Yacht_Dice/js/yacht.js"></script>
 </body>
