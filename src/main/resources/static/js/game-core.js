@@ -74,7 +74,10 @@ const Core = (function() {
             // UI 바로 넘기기 (입력창 숨김 -> 로비 표시)
             const welcome = document.getElementById('welcome-msg');
             if(welcome) welcome.innerText = ` ${myNickname}님`;
-
+            const loggedInArea = document.getElementById('loggedInArea');
+            const userNickname = document.getElementById('userNickname');
+            if(loggedInArea) loggedInArea.classList.remove('hidden');
+            if(userNickname) userNickname.innerText = myNickname;
             const loginScreen = document.getElementById('login-screen');
             const lobbyScreen = document.getElementById('lobby-screen');
 
@@ -85,15 +88,36 @@ const Core = (function() {
         }
         console.log("[GameCore] Initialized");
     }
+    function logout() {
+        showConfirm("로그아웃 하시겠습니까?", () => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('jwt');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('nickname');
 
+            if(stompClient) stompClient.disconnect();
+
+            document.getElementById('alert-msg-text').innerText = "로그아웃 되었습니다.";
+            document.getElementById('alert-modal').classList.remove('hidden');
+
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        });
+    }
     function login() {
         const input = document.getElementById('nicknameInput').value.trim();
         if (!input) return showAlert("닉네임을 입력하세요.");
         localStorage.setItem('nickname', input);
         myNickname = input;
+        const loggedInArea = document.getElementById('loggedInArea');
+        const userNickname = document.getElementById('userNickname');
+        if(loggedInArea) loggedInArea.classList.remove('hidden');
+        if(userNickname) userNickname.innerText = myNickname;
         document.getElementById('welcome-msg').innerText = ` ${myNickname}님`;
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('lobby-screen').classList.remove('hidden');
+
         loadRooms();
     }
 
@@ -559,7 +583,7 @@ const Core = (function() {
         }));
     }
     return {
-        init, login, createRoom, joinRoom, loadRooms, sendChat,
+        init, login, logout, createRoom, joinRoom, loadRooms, sendChat,
         showAlert, closeAlert,
         showConfirm, closeConfirm, confirmOk, // 모달 함수들 공개
         closeRanking, exitRoom, toggleTheme,
