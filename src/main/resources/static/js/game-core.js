@@ -139,12 +139,29 @@ const Core = (function() {
     }
 
     function createRoom() {
-        const name = document.getElementById('roomNameInput').value;
+        const nameInput = document.getElementById('roomNameInput');
+        const createBtn = document.querySelector('button[onclick="Core.createRoom()"]');
+        const name = nameInput.value;
+
         if (!name) return showAlert("방 제목을 입력하세요.");
+
+        // [추가] 중복 클릭 방지: 버튼을 비활성화하고 상태를 표시합니다.
+        if (createBtn.disabled) return;
+        createBtn.disabled = true;
+        const originalText = createBtn.innerText;
+        createBtn.innerText = "생성 중...";
+
         fetch(`${CONFIG.apiPath}/api/rooms?name=${encodeURIComponent(name)}`, { method: 'POST' })
             .then(res => res.json())
-            .then(room => joinRoom(room.roomId, room.roomName))
-            .catch(err => showAlert("방 생성 실패: " + err));
+            .then(room => {
+                joinRoom(room.roomId, room.roomName);
+            })
+            .catch(err => {
+                showAlert("방 생성 실패: " + err);
+                // 에러 발생 시에만 버튼을 다시 활성화합니다.
+                createBtn.disabled = false;
+                createBtn.innerText = originalText;
+            });
     }
     function refreshUserCount() {
         if (!currentRoomId) return;
