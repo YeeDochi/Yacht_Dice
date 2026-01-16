@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>game_hub/Yacht_Dice</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/style.css">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
@@ -131,6 +132,91 @@
         /* 다크모드 대응 (필요시 style.css에 추가해도 됨) */
         body.dark-mode .score-preview {
             color: #666;
+        }
+        /* 기존 스타일 코드들 아래에 붙여넣으세요 */
+
+        /* [모바일 반응형 패치] */
+        /* [모바일 반응형 패치] - 기존 내용을 지우고 이 코드로 덮어씌우세요 */
+        @media (max-width: 768px) {
+            /* 1. [핵심] 가로(row) 배치를 세로(column) 배치로 강제 변경 */
+            /* 이 설정 때문에 오른쪽 패널이 게임판 '아래'로 내려갑니다 */
+            .game-layout {
+                flex-direction: column !important;
+                align-items: center;
+                gap: 15px;
+            }
+
+            /* 2. 너비를 100%로 설정하여 화면에 꽉 차게 만듦 */
+            .game-stage, #right-panel {
+                width: 100%;
+                max-width: 100%;
+            }
+
+            /* 3. 모바일에서는 채팅창 높이를 조금 줄여서 스크롤하기 편하게 */
+            #right-panel {
+                height: 400px;
+            }
+
+            /* 4. 주사위 및 폰트 크기 모바일 최적화 */
+            .dice {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+            .score-table th, .score-table td {
+                padding: 6px 8px;
+                font-size: 12px;
+            }
+            .category-name {
+                width: 30%;
+            }
+
+            /* 5. 팝업창(모달) 너비 확보 */
+            .box {
+                width: 90% !important;
+                max-width: none;
+            }
+
+            .game-stage {
+                min-height: auto;
+            }
+            header {
+                padding: 8px 12px;
+                gap: 10px;
+            }
+
+            /* 2. 제목 글씨 크기 줄이기 */
+            .repo-breadcrumb {
+                font-size: 16px;
+            }
+            /* 공간 절약을 위해 'game-hub /' 부분 숨기거나 작게 (선택사항) */
+            .user-name, .repo-breadcrumb span {
+                font-size: 14px;
+            }
+            /* 'Public' 뱃지는 모바일에서 굳이 안 보여도 되니 숨김 */
+            .badge {
+                display: none;
+            }
+
+            /* 3. [핵심] 닉네임과 버튼이 세로로 깨지지 않게 '줄바꿈 금지' 설정 */
+            #loggedInArea {
+                gap: 5px; /* 간격 좁히기 */
+            }
+            #loggedInArea span {
+                white-space: nowrap; /* 글자 줄바꿈 절대 금지 */
+                font-size: 12px !important; /* 글씨 작게 */
+                max-width: 80px; /* 닉네임이 너무 길면 */
+                overflow: hidden; /* 자르고 */
+                text-overflow: ellipsis; /* ...으로 표시 */
+                display: inline-block;
+                vertical-align: middle;
+            }
+
+            /* 4. 버튼들 크기도 작게 조절 */
+            header button {
+                padding: 4px 8px;
+                font-size: 12px;
+            }
         }
     </style>
 </head>
