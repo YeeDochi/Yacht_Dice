@@ -217,6 +217,28 @@
                 padding: 4px 8px;
                 font-size: 12px;
             }
+
+            #lobby-screen .box > div:nth-child(2) {
+                flex-direction: column !important; /* 가로 -> 세로 변경 */
+                gap: 8px !important; /* 간격 조절 */
+            }
+
+            /* 2. 방 제목 입력창을 너비 100%로 강제 확장 */
+            #roomNameInput {
+                width: 100% !important;
+                flex: none !important; /* HTML에 적힌 flex:2 무시 */
+            }
+
+            /* 3. '방 만들기', '랭킹' 버튼도 꽉 차게 변경 (터치하기 편하게) */
+            #lobby-screen button {
+                width: 100%;
+                margin: 0 !important; /* 불필요한 여백 제거 */
+            }
+
+            /* 4. 아래쪽 '방 목록' 헤더도 꽉 차게 정렬 */
+            #lobby-screen .box > div:nth-child(3) > div:first-child {
+                padding: 10px !important; /* 패딩 살짝 조정 */
+            }
         }
     </style>
 </head>
