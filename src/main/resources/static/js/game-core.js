@@ -128,10 +128,17 @@ const Core = (function() {
                 const list = document.getElementById('room-list');
                 list.innerHTML = '';
                 if (!rooms.length) list.innerHTML = '<li style="padding:15px; text-align:center; color:#888;">생성된 방이 없습니다.</li>';
+
                 rooms.forEach(r => {
                     const li = document.createElement('li');
                     li.className = 'room-item';
-                    li.innerHTML = `<span style="font-weight:bold;">${r.roomName}</span> <button class="btn-default" onclick="Core.joinRoom('${r.roomId}', '${r.roomName}')">참가</button>`;
+
+                    // [수정] 게임 중인 경우 버튼 비활성화 및 텍스트 변경
+                    const btnHtml = r.playing
+                        ? `<button class="btn-default" disabled style="opacity:0.6; cursor:not-allowed;">진행 중</button>`
+                        : `<button class="btn-default" onclick="Core.joinRoom('${r.roomId}', '${r.roomName}')">참가</button>`;
+
+                    li.innerHTML = `<span style="font-weight:bold;">${r.roomName}</span> ${btnHtml}`;
                     list.appendChild(li);
                 });
             })
@@ -197,6 +204,11 @@ const Core = (function() {
         fetch(`${CONFIG.apiPath}/api/rooms/${roomId}`)
             .then(res => res.json())
             .then(room => {
+                if (room.playing) {
+                    showAlert("이미 게임이 시작되어 입장할 수 없습니다.");
+                    loadRooms(); // 목록 새로고침
+                    return;
+                }
                 currentRoomId = roomId;
                 const titleText = document.getElementById('room-title-text');
                 if(titleText) titleText.innerText = roomName;
