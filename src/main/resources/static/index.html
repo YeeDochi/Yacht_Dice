@@ -266,6 +266,20 @@
                 font-size: 14px;
                 font-weight: bold;
             }
+            #login-screen .box {
+                width: 100% !important;
+                margin: 0 !important;
+                box-sizing: border-box;
+            }
+
+            /* 2. 로그인 화면 컨테이너의 고정 너비(400px) 제한 해제 */
+            /* 이걸 풀어야 좁은 폰에서도, 넓은 폰에서도 자연스럽게 늘어납니다 */
+            #login-screen {
+                max-width: none !important;
+                width: 100% !important;
+                padding: 0 20px !important; /* 좌우 여백을 조금 줘서 보기 좋게 */
+                box-sizing: border-box;
+            }
         }
     </style>
 </head>
