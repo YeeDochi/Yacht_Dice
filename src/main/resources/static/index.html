@@ -49,7 +49,7 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 10px;
-            flex-wrap: wrap; /* [수정] 공간 부족하면 자연스럽게 줄바꿈 */
+            flex-wrap: wrap;
             gap: 10px;
         }
 
@@ -89,43 +89,60 @@
            2. 모바일 반응형 (UNO 스타일 참조)
            ========================================= */
         @media (max-width: 768px) {
-            /* [헤더 최적화] UNO처럼 패딩 줄이고 폰트 조절하여 잘림 방지 */
-            header { padding: 8px 10px; gap: 5px; }
-            .repo-breadcrumb { font-size: 15px; display: flex; align-items: center; flex-wrap: nowrap; }
-            .repo-breadcrumb span { display: inline-block !important; }
-            .badge { display: none !important; } /* 공간 부족 시 뱃지 숨김 */
-            header button { padding: 4px 8px; font-size: 12px; }
+            /* [헤더 최적화] 패딩 줄임 */
+            header { padding: 8px 10px !important; gap: 5px !important; }
 
-            /* [닉네임] UNO처럼 줄바꿈 방지 및 말줄임 */
+            /* [Dark/Light 버튼] 글자가 너무 기므로 아이콘으로 대체하여 공간 확보 */
+            header .theme-btn {
+                font-size: 0 !important; /* 글자 숨김 */
+                width: 32px; height: 32px;
+                padding: 0 !important;
+                display: flex; align-items: center; justify-content: center;
+            }
+            header .theme-btn::after {
+                content: "🌓"; /* 달/해 아이콘 표시 */
+                font-size: 16px;
+                color: var(--text-primary);
+            }
+
+            /* 닉네임 줄바꿈 방지 및 말줄임 */
             #loggedInArea { gap: 5px; }
             #loggedInArea span {
                 white-space: nowrap; font-size: 12px !important;
-                max-width: 80px; overflow: hidden; text-overflow: ellipsis;
+                max-width: 70px; overflow: hidden; text-overflow: ellipsis;
                 display: inline-block; vertical-align: middle;
             }
 
-            /* [컨테이너] 좌우 여백 최소화 */
+            /* 컨테이너 좌우 여백 최소화 */
             .container { padding: 0 5px !important; width: 100%; box-sizing: border-box; }
             body, html { overflow-x: hidden; width: 100%; }
 
-            /* [게임 정보바] 버튼 겹침 방지 (줄바꿈 허용) */
-            .game-meta {
-                margin-bottom: 10px;
-                align-items: center;
+            /* [방 목록] 글자 깨짐 해결 */
+            #lobby-screen .box > div:last-child > div:first-child {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
             }
+            #lobby-screen .box > div:last-child > div:first-child span {
+                white-space: nowrap !important; /* 줄바꿈 금지 */
+                flex-shrink: 0; /* 너비 줄어듦 방지 */
+            }
+
+            /* 게임 정보바 버튼 겹침 방지 */
+            .game-meta { margin-bottom: 10px; align-items: center; }
             .game-meta button { padding: 8px 12px; font-size: 13px; }
 
-            /* [레이아웃] 세로 배치 */
+            /* 레이아웃 세로 배치 */
             .game-layout { flex-direction: column !important; align-items: center; gap: 15px; }
             .game-stage { width: 100%; max-width: 100%; min-height: auto; }
 
-            /* [사이드바 래퍼] 투명화 & 높이 해제 */
+            /* 사이드바 래퍼 투명화 */
             #sidebar-wrapper { height: auto; border: none; background: transparent; width: 100%; gap: 10px; overflow: visible; }
 
-            /* [플레이어 목록] 게임판 하단 배치 */
+            /* 플레이어 목록 */
             #player-list-box { height: 150px; border: 1px solid var(--border-color); border-radius: 6px; width: 100%; }
 
-            /* [채팅창] 팝업 스타일 */
+            /* 채팅창 팝업 */
             #right-panel {
                 display: none; /* 숨김 */
                 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -133,7 +150,7 @@
             }
             #right-panel.active { display: flex !important; }
 
-            /* [모바일 버튼] */
+            /* 모바일 채팅 버튼 */
             #mobile-chat-btn {
                 display: flex !important; position: fixed; bottom: 20px; right: 20px;
                 width: 50px; height: 50px; border-radius: 50%;
@@ -147,7 +164,7 @@
                 cursor: pointer; color: var(--text-primary); padding: 5px;
             }
 
-            /* 기타 요소 크기 최적화 */
+            /* 기타 요소 최적화 */
             .dice { width: 40px; height: 40px; font-size: 20px; }
             .box { width: 100% !important; margin: 0 auto; }
             #lobby-screen .box > div:nth-child(2) { flex-direction: column !important; gap: 8px !important; }
