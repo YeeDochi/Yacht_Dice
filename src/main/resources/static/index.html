@@ -13,8 +13,41 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="icon" href="https://cdn.simpleicons.org/github/ffffff" type="image/svg+xml">
     <style>
+        /* =========================================
+           1. 기본 레이아웃 & 공통 스타일
+           ========================================= */
         .game-layout { display: flex; gap: 20px; align-items: flex-start; }
 
+        /* [신규] 우측 사이드바 전체 래퍼 (PC용) */
+        #sidebar-wrapper {
+            display: flex; flex-direction: column;
+            height: 600px; flex: 1; min-width: 300px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--box-bg);
+            overflow: hidden;
+        }
+
+        /* [신규] 플레이어 목록 박스 */
+        #player-list-box {
+            flex: 0 0 150px; /* 높이 고정 */
+            display: flex; flex-direction: column;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--box-bg);
+        }
+        #user-list-area {
+            flex: 1; overflow-y: auto; background: var(--box-bg);
+        }
+
+        /* [수정] 채팅 패널 (ID 유지, 이제 채팅 기능만 담당) */
+        #right-panel {
+            flex: 1; /* PC: 남은 공간 채움 */
+            display: flex; flex-direction: column;
+            background: var(--box-bg);
+            border: none; margin: 0; border-radius: 0;
+        }
+
+        /* 방 목록 아이템 */
         .room-item {
             padding: 12px 16px;
             border-bottom: 1px solid var(--border-color);
@@ -24,13 +57,17 @@
         .room-item:hover { background-color: var(--row-hover); }
         .room-item:last-child { border-bottom: none; }
 
+        /* 게임 스테이지 (좌측) */
         .game-stage {
             border: 1px solid var(--border-color); background: var(--box-bg);
-            width: 600px; height: 600px; /* 높이 조금 늘림 */
+            width: 600px; height: 600px;
             position: relative; border-radius: 6px; overflow: hidden;
             display: flex; flex-direction: column;
         }
 
+        /* =========================================
+           2. 주사위 섹션 스타일
+           ========================================= */
         #dice-section {
             flex: 0 0 130px; background: var(--bg-header);
             border-bottom: 1px solid var(--border-color);
@@ -57,8 +94,10 @@
         }
         .dice.rolling { animation: roll-anim 0.2s linear infinite; background-color: var(--row-hover); color: var(--text-secondary); }
 
+        /* =========================================
+           3. 점수판 스타일
+           ========================================= */
         #score-section { flex: 1; overflow-y: auto; padding: 0; }
-
         .score-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .score-table th {
             background: var(--bg-header); color: var(--text-secondary);
@@ -70,216 +109,140 @@
             padding: 6px 16px; border-bottom: 1px solid var(--border-color);
             color: var(--text-primary); height: 28px;
         }
-
-        /* 족보 이름 칸 */
         .category-name {
             font-weight: 600; color: var(--text-primary);
             background-color: var(--bg-header); border-right: 1px solid var(--border-color);
             width: 40%;
         }
-
         .score-cell { cursor: pointer; text-align: center; }
         .score-cell:hover { background: var(--row-hover); }
         .score-cell.filled { background: var(--bg-header); color: var(--text-secondary); cursor: default; }
 
-        /* [추가] 합계 및 보너스 행 스타일 */
+        /* 합계/보너스 행 강조 */
         .summary-row td {
-            background-color: var(--row-hover);
-            font-weight: bold;
-            color: var(--link-color);
-            border-top: 2px solid var(--border-color); /* 구분선 강조 */
+            background-color: var(--row-hover); font-weight: bold;
+            color: var(--link-color); border-top: 2px solid var(--border-color);
         }
-        .summary-row .category-name {
-            color: var(--text-secondary);
-        }
+        .summary-row .category-name { color: var(--text-secondary); }
         .total-row td {
-            background-color: var(--text-primary);
-            color: var(--box-bg);
-            font-size: 14px;
-            font-weight: bold;
-            border-top: 2px solid var(--border-color);
+            background-color: var(--text-primary); color: var(--box-bg);
+            font-size: 14px; font-weight: bold; border-top: 2px solid var(--border-color);
         }
-        .total-row .category-name {
-            background-color: var(--text-primary);
-            color: var(--box-bg);
-        }
+        .total-row .category-name { background-color: var(--text-primary); color: var(--box-bg); }
+        .score-preview { color: #aaa; font-style: italic; font-size: 0.9em; }
+        body.dark-mode .score-preview { color: #666; }
 
-        #right-panel {
-            border: 1px solid var(--border-color); border-radius: 6px; background: var(--box-bg);
-            display: flex; flex-direction: column; height: 600px; flex: 1; min-width: 300px;
-        }
-
-        #user-list-area { flex: 0 0 150px; border-bottom: 1px solid var(--border-color); overflow-y: auto; background: var(--box-bg); }
+        /* =========================================
+           4. 플레이어 목록 & 채팅 내부 스타일
+           ========================================= */
         .user-row { padding: 10px 16px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-primary); }
         .user-row:hover { background: var(--row-hover); }
         .user-row.active { background: var(--row-hover); border-left: 3px solid var(--status-online); }
         .user-row.turn { font-weight: bold; color: var(--status-online); }
 
         #chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-
+        #messages { flex: 1; overflow-y: auto; padding: 10px; }
 
         .msg-input-box { padding: 10px; border-top: 1px solid var(--border-color); display: flex; gap: 5px; background: var(--bg-header); }
         .msg-input-box input { flex: 1; width: auto; }
         .msg-input-box button { white-space: nowrap; flex-shrink: 0; }
 
         .panel-header { padding: 8px 16px; background: var(--bg-header); border-bottom: 1px solid var(--border-color); font-size: 12px; font-weight: 600; color: var(--text-secondary); }
-        .score-preview {
-            color: #aaa;       /* 연한 회색 */
-            font-style: italic; /* 기울임 */
-            font-size: 0.9em;
-        }
 
-        /* 다크모드 대응 (필요시 style.css에 추가해도 됨) */
-        body.dark-mode .score-preview {
-            color: #666;
-        }
-        /* 기존 스타일 코드들 아래에 붙여넣으세요 */
+        /* PC에서는 모바일 전용 버튼 숨김 */
+        #mobile-chat-btn, #mobile-chat-close-btn { display: none; }
 
-        /* [모바일 반응형 패치] */
-        /* [모바일 반응형 패치] - 기존 내용을 지우고 이 코드로 덮어씌우세요 */
+
+        /* =========================================
+           5. 모바일 반응형 스타일 (max-width: 768px)
+           ========================================= */
         @media (max-width: 768px) {
-            /* 1. [핵심] 가로(row) 배치를 세로(column) 배치로 강제 변경 */
-            /* 이 설정 때문에 오른쪽 패널이 게임판 '아래'로 내려갑니다 */
+            /* [레이아웃] 세로 배치 */
             .game-layout {
                 flex-direction: column !important;
                 align-items: center;
                 gap: 15px;
             }
 
-            /* 2. 너비를 100%로 설정하여 화면에 꽉 차게 만듦 */
-            .game-stage, #right-panel {
+            /* [게임판] 꽉 차게 */
+            .game-stage {
                 width: 100%;
                 max-width: 100%;
-            }
-
-            /* 3. 모바일에서는 채팅창 높이를 조금 줄여서 스크롤하기 편하게 */
-            #right-panel {
-                height: 400px;
-            }
-
-            /* 4. 주사위 및 폰트 크기 모바일 최적화 */
-            .dice {
-                width: 40px;
-                height: 40px;
-                font-size: 20px;
-            }
-            .score-table th, .score-table td {
-                padding: 6px 8px;
-                font-size: 12px;
-            }
-            .category-name {
-                width: 30%;
-            }
-
-            /* 5. 팝업창(모달) 너비 확보 */
-            .box {
-                width: 90% !important;
-                max-width: none;
-            }
-
-            .game-stage {
                 min-height: auto;
             }
-            header {
-                padding: 8px 12px;
-                gap: 10px;
+
+            /* [래퍼] 투명화 & 높이 해제 (내부 박스들을 세로로 나열) */
+            #sidebar-wrapper {
+                height: auto;
+                border: none;
+                background: transparent;
+                width: 100%;
+                gap: 15px;
+                overflow: visible;
             }
 
-            /* 2. 제목 글씨 크기 줄이기 */
-            .repo-breadcrumb {
-                font-size: 16px;
-            }
-            /* 공간 절약을 위해 'game-hub /' 부분 숨기거나 작게 (선택사항) */
-            .user-name, .repo-breadcrumb span {
-                font-size: 14px;
-            }
-            /* 'Public' 뱃지는 모바일에서 굳이 안 보여도 되니 숨김 */
-            .badge {
-                display: none;
-            }
-
-            /* 3. [핵심] 닉네임과 버튼이 세로로 깨지지 않게 '줄바꿈 금지' 설정 */
-            #loggedInArea {
-                gap: 5px; /* 간격 좁히기 */
-            }
-            #loggedInArea span {
-                white-space: nowrap; /* 글자 줄바꿈 절대 금지 */
-                font-size: 12px !important; /* 글씨 작게 */
-                max-width: 80px; /* 닉네임이 너무 길면 */
-                overflow: hidden; /* 자르고 */
-                text-overflow: ellipsis; /* ...으로 표시 */
-                display: inline-block;
-                vertical-align: middle;
-            }
-
-            /* 4. 버튼들 크기도 작게 조절 */
-            header button {
-                padding: 4px 8px;
-                font-size: 12px;
-            }
-
-            body, html {
-                overflow-x: hidden;
+            /* [플레이어 목록] 게임판 아래에 예쁘게 표시 */
+            #player-list-box {
+                height: 180px;
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
                 width: 100%;
             }
 
-            /* 2. 컨테이너 양옆 여백을 줄여서 공간 확보 */
-            .container {
-                padding: 0 10px !important; /* 기존 16px에서 줄임 */
-                width: 100%;
-                box-sizing: border-box; /* 테두리 포함 크기 계산 */
+            /* [채팅창] 평소엔 숨김 -> active 시 전체화면 팝업 */
+            #right-panel {
+                display: none; /* 숨김 */
+                position: fixed;
+                top: 0; left: 0;
+                width: 100%; height: 100%;
+                z-index: 9999;
+                margin: 0;
+                /* 팝업 시 배경색 지정 필수 */
+                background-color: var(--box-bg);
             }
-
-            /* 3. 대기실 박스 크기 강제 고정 */
-            #lobby-screen .box {
-                width: 100% !important;
-                margin: 0 !important;
-                box-sizing: border-box;
-            }
-
-            /* 4. [입력창 & 버튼] 세로 정렬 및 크기 맞춤 */
-            #lobby-screen .box > div:nth-child(2) {
-                flex-direction: column !important;
-                gap: 8px !important;
-                padding: 10px !important; /* 패딩 재조정 */
-            }
-            #roomNameInput, #lobby-screen button {
-                width: 100% !important;
-                margin: 0 !important;
-                box-sizing: border-box; /* 뚱뚱해짐 방지 */
-            }
-
-            /* 5. [방 목록 헤더] 글씨 깨짐 및 정렬 수정 */
-            /* '방 목록' 글자와 '새로고침' 버튼이 있는 줄을 타겟팅 */
-            #lobby-screen .box > div:last-child > div:first-child {
+            #right-panel.active {
                 display: flex !important;
-                justify-content: space-between !important;
-                align-items: center !important; /* 수직 중앙 정렬 (글씨 깨짐 방지) */
-                padding: 10px !important;
-                width: 100% !important;
-                box-sizing: border-box;
             }
 
-            /* 6. '방 목록' 글자 줄바꿈 금지 */
-            #lobby-screen .box > div:last-child > div:first-child span {
-                white-space: nowrap;
-                font-size: 14px;
-                font-weight: bold;
+            /* [모바일 버튼] 채팅 켜기 (우측 하단) */
+            #mobile-chat-btn {
+                display: flex !important;
+                position: fixed; bottom: 20px; right: 20px;
+                width: 50px; height: 50px; border-radius: 50%;
+                background-color: var(--link-color); color: white;
+                font-size: 24px; justify-content: center; align-items: center;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 9900;
+                border: none; cursor: pointer; transition: transform 0.2s;
             }
-            #login-screen .box {
-                width: 100% !important;
-                margin: 0 !important;
-                box-sizing: border-box;
+            #mobile-chat-btn:active { transform: scale(0.9); }
+
+            /* [모바일 버튼] 채팅 닫기 (팝업 내부) */
+            #mobile-chat-close-btn {
+                display: block !important;
+                background: none; border: none; font-size: 1.2em;
+                cursor: pointer; color: var(--text-primary); padding: 5px;
             }
 
-            /* 2. 로그인 화면 컨테이너의 고정 너비(400px) 제한 해제 */
-            /* 이걸 풀어야 좁은 폰에서도, 넓은 폰에서도 자연스럽게 늘어납니다 */
-            #login-screen {
-                max-width: none !important;
-                width: 100% !important;
-                padding: 0 20px !important; /* 좌우 여백을 조금 줘서 보기 좋게 */
-                box-sizing: border-box;
-            }
+            /* [기타 최적화] */
+            .dice { width: 40px; height: 40px; font-size: 20px; }
+            .score-table th, .score-table td { padding: 6px 8px; font-size: 12px; }
+            .category-name { width: 30%; }
+            .box { width: 90% !important; max-width: none; }
+
+            #lobby-screen .box, #login-screen .box { width: 100% !important; }
+            .container { padding: 0 10px !important; width: 100%; box-sizing: border-box; }
+
+            #lobby-screen .box > div:nth-child(2) { flex-direction: column !important; gap: 8px !important; padding: 10px !important; }
+            #roomNameInput, #lobby-screen button { width: 100% !important; }
+
+            #lobby-screen .box > div:last-child > div:first-child { display: flex !important; justify-content: space-between !important; align-items: center !important; padding: 10px !important; width: 100% !important; box-sizing: border-box; }
+            #lobby-screen .box > div:last-child > div:first-child span { white-space: nowrap; font-size: 14px; font-weight: bold; }
+
+            #login-screen { max-width: none !important; width: 100% !important; padding: 0 20px !important; box-sizing: border-box; }
+
+            /* 닉네임 줄바꿈 방지 */
+            #loggedInArea { gap: 5px; }
+            #loggedInArea span { white-space: nowrap; font-size: 12px !important; max-width: 80px; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle; }
         }
     </style>
 </head>
@@ -332,6 +295,7 @@
 </div>
 
 <div id="game-screen" class="container hidden">
+    <button id="mobile-chat-btn" onclick="Core.toggleChat()">💬</button>
     <div class="game-meta" style="display:flex; justify-content:space-between; margin-bottom:10px; align-items:center;">
         <div>
             <strong id="room-title-text" style="font-size: 18px;">방 제목</strong>
@@ -371,21 +335,29 @@
             </div>
         </div>
 
-        <div id="right-panel">
-            <div class="panel-header">플레이어 목록</div>
-            <div id="user-list-area"></div>
+        <div id="sidebar-wrapper">
 
-            <div class="panel-header" style="border-top:1px solid var(--border-color);">채팅</div>
-            <div id="chat-area">
-                <div id="messages"></div>
+            <div id="player-list-box">
+                <div class="panel-header">플레이어 목록</div>
+                <div id="user-list-area"></div>
+            </div>
 
-                <div class="msg-input-box">
-                    <button class="btn-default" onclick="Core.openImageModal()" style="padding: 0 8px; margin-right:5px;" title="이미지 전송">
-                        <i class="fas fa-images"></i>
-                    </button>
+            <div id="right-panel">
+                <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-color);">
+                    <span>채팅</span>
+                    <button id="mobile-chat-close-btn" onclick="Core.toggleChat()">❌</button>
+                </div>
 
-                    <input type="text" id="chatInput" placeholder="입력..." onkeypress="if(event.key==='Enter') Core.sendChat()">
-                    <button class="btn-primary" onclick="Core.sendChat()">전송</button>
+                <div id="chat-area">
+                    <div id="messages"></div>
+
+                    <div class="msg-input-box">
+                        <button class="btn-default" onclick="Core.openImageModal()" style="padding: 0 8px; margin-right:5px;" title="이미지 전송">
+                            <i class="fas fa-images"></i>
+                        </button>
+                        <input type="text" id="chatInput" placeholder="입력..." onkeypress="if(event.key==='Enter') Core.sendChat()">
+                        <button class="btn-primary" onclick="Core.sendChat()">전송</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -482,7 +454,6 @@
         </div>
     </div>
 </div>
-
 <script src="/Yacht_Dice/js/game-core.js"></script>
 <script src="/Yacht_Dice/js/yacht.js"></script>
 </body>
