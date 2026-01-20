@@ -72,7 +72,11 @@
         .score-cell { cursor: pointer; text-align: center; } .score-cell.filled { background: var(--bg-header); cursor: default; }
         .summary-row td { background-color: var(--row-hover); font-weight: bold; color: var(--link-color); border-top: 2px solid var(--border-color); }
         .total-row td { background-color: var(--text-primary); color: var(--box-bg); border-top: 2px solid var(--border-color); }
-
+        .score-cell.score-preview {
+            color: var(--text-secondary);
+            opacity: 0.5 !important;
+            font-weight: normal;
+        }
         .user-row { padding: 10px 16px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
         .user-row.active { background: var(--row-hover); border-left: 3px solid var(--status-online); }
 
