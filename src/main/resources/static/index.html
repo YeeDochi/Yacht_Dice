@@ -39,9 +39,10 @@
 
         /* 채팅 패널 */
         #right-panel {
-            flex: 1; display: flex; flex-direction: column;
+            flex: 1; display: flex; flex-direction: column; min-height: 0;
             background: var(--box-bg); border: none; margin: 0; border-radius: 0;
         }
+
 
         /* 상단 정보바 (제목 + 버튼) */
         .game-meta {
@@ -87,7 +88,7 @@
         .panel-header { padding: 8px 16px; background: var(--bg-header); border-bottom: 1px solid var(--border-color); font-size: 12px; font-weight: 600; color: var(--text-secondary); }
 
         /* PC에서는 모바일 버튼 숨김 */
-        #mobile-chat-btn, #mobile-chat-close-btn { display: none; }
+        #mobile-chat-btn, #mobile-chat-close-btn { display: none !important;  }
 
         /* =========================================
            2. 모바일 반응형 (UNO 스타일 참조)
