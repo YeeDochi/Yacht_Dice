@@ -96,7 +96,10 @@
         @media (max-width: 768px) {
             /* [헤더 최적화] 패딩 줄임 */
             header { padding: 8px 10px !important; gap: 5px !important; }
-
+            .repo-breadcrumb .user-name,
+            .repo-breadcrumb .repo-name {
+                font-size: 14px !important; /* 기존(보통 16~18px)보다 작게 */
+            }
             /* [Dark/Light 버튼] 글자가 너무 기므로 아이콘으로 대체하여 공간 확보 */
             header .theme-btn {
                 font-size: 0 !important; /* 글자 숨김 */

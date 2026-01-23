@@ -39,8 +39,8 @@ public class RoomController {
     }
 
     @GetMapping("/rankings")
-    public ResponseEntity<Object> getRanking() {
-        return scoreSender.ranking("Yacht_Dice");
+    public ResponseEntity<Object> getRanking(@RequestParam(required = false) String gameType) {
+        return scoreSender.ranking(gameType);
     }
 
 }
