@@ -137,8 +137,22 @@
             }
 
             /* 게임 정보바 버튼 겹침 방지 */
-            .game-meta { margin-bottom: 10px; align-items: center; }
-            .game-meta button { padding: 8px 12px; font-size: 13px; }
+            .game-meta {
+                flex-direction: column !important; /* 가로 -> 세로 변경 */
+                align-items: flex-start !important;
+                gap: 10px !important;
+            }
+            /* 버튼 그룹도 꽉 차게 */
+            .game-meta > div:last-child {
+                width: 100%;
+                display: flex;
+                justify-content: flex-end; /* 버튼 오른쪽 정렬 */
+                gap: 10px;
+            }
+            .game-meta button {
+                flex: 1; /* 버튼들을 균등하게 키워서 터치하기 편하게 */
+            }
+
 
             /* 레이아웃 세로 배치 */
             .game-layout { flex-direction: column !important; align-items: center; gap: 15px; }
